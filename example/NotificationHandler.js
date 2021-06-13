@@ -17,6 +17,10 @@ class NotificationHandler {
     }
   }
 
+  onBaiduBind(bindData) {
+    console.log('onBaiduBind received:', bindData);
+  }
+
   onAction(notification) {
     console.log ('Notification action received:');
     console.log(notification.action);
@@ -47,6 +51,9 @@ PushNotification.configure({
   // (optional) Called when Token is generated (iOS and Android)
   onRegister: handler.onRegister.bind(handler),
 
+  // (optional) Called when Baidu is binded (only Android)
+  onBaiduBind: handler.onBaiduBind.bind(handler),
+
   // (required) Called when a remote or local notification is opened or received
   onNotification: handler.onNotification.bind(handler),
 
@@ -73,6 +80,8 @@ PushNotification.configure({
    * - if not, you must call PushNotificationsHandler.requestPermissions() later
    */
   requestPermissions: true,
+
+  pushType: 'BAIDU',
 });
 
 export default handler;

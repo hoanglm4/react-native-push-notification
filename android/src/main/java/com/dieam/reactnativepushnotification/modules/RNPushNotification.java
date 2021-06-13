@@ -2,7 +2,6 @@ package com.dieam.reactnativepushnotification.modules;
 
 import android.app.Activity;
 import android.app.Application;
-import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -12,10 +11,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 
+import com.baidu.android.pushservice.PushConstants;
+import com.baidu.android.pushservice.PushManager;
+import com.dieam.reactnativepushnotification.baidu.Utils;
 import com.dieam.reactnativepushnotification.helpers.ApplicationBadgeHelper;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
@@ -26,7 +29,6 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,9 +40,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-public class RNPushNotification extends ReactContextBaseJavaModule implements ActivityEventListener {
+public class RNPushNotification extends ReactContextBaseJavaModule
+        implements ActivityEventListener,
+        LifecycleEventListener {
     public static final String LOG_TAG = "RNPushNotification";// all logging should use this tag
     public static final String KEY_TEXT_REPLY = "key_text_reply";
+    public static final String ACTION_BAIDU_PUSH_NOTIFICATION = "RNPushNotification.ACTION_BAIDU_PUSH_NOTIFICATION";
+    public static final String ACTION_BAIDU_BIND = "RNPushNotification.ACTION_BAIDU_BIND";
 
     public interface RNIntentHandler {
         void onNewIntent(Intent intent);
@@ -54,6 +60,18 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
     private RNPushNotificationHelper mRNPushNotificationHelper;
     private final SecureRandom mRandomNumberGenerator = new SecureRandom();
     private RNPushNotificationJsDelivery mJsDelivery;
+    private ReactApplicationContext mContext;
+
+    private final BroadcastReceiver mBaiduPushReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (ACTION_BAIDU_PUSH_NOTIFICATION.equals(intent.getAction())) {
+                mJsDelivery.notifyNotification(intent.getExtras());
+            } else if (ACTION_BAIDU_BIND.equals(intent.getAction())) {
+                mJsDelivery.baiduBind(intent.getExtras());
+            }
+        }
+    };
 
     public RNPushNotification(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -66,6 +84,34 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
         mRNPushNotificationHelper = new RNPushNotificationHelper(applicationContext);
         // This is used to delivery callbacks to JS
         mJsDelivery = new RNPushNotificationJsDelivery(reactContext);
+        mContext = reactContext;
+        this.registerBroadcastReceiver();
+    }
+
+    private void registerBroadcastReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_BAIDU_PUSH_NOTIFICATION);
+        filter.addAction(ACTION_BAIDU_BIND);
+        mContext.registerReceiver(mBaiduPushReceiver, filter);
+    }
+
+    @Override
+    public void onHostResume() {
+
+    }
+
+    @Override
+    public void onHostPause() {
+
+    }
+
+    @Override
+    public void onHostDestroy() {
+        try {
+            mContext.unregisterReceiver(mBaiduPushReceiver);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "onHostDestroy", e);
+        }
     }
 
     @Override
@@ -134,23 +180,26 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
     }
 
     @ReactMethod
-    public void requestPermissions() {
-      final RNPushNotificationJsDelivery fMjsDelivery = mJsDelivery;
-      
-      FirebaseMessaging.getInstance().getToken()
-              .addOnCompleteListener(new OnCompleteListener<String>() {
-                  @Override
-                  public void onComplete(@NonNull Task<String> task) {
-                      if (!task.isSuccessful()) {
-                          Log.e(LOG_TAG, "exception", task.getException());
-                          return;
-                      }
+    public void requestPermissions(String pushType) {
+        Log.d(LOG_TAG, "[requestPermissions] pushType = " + pushType);
+        if ("BAIDU".equalsIgnoreCase(pushType)) {
+            this.bindBaiduWork();
+        }
+        final RNPushNotificationJsDelivery fMjsDelivery = mJsDelivery;
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            Log.e(LOG_TAG, "exception", task.getException());
+                            return;
+                        }
 
-                      WritableMap params = Arguments.createMap();
-                      params.putString("deviceToken", task.getResult());
-                      fMjsDelivery.sendEvent("remoteNotificationsRegistered", params);
-                  }
-              });
+                        WritableMap params = Arguments.createMap();
+                        params.putString("deviceToken", task.getResult());
+                        fMjsDelivery.sendEvent("remoteNotificationsRegistered", params);
+                    }
+                });
     }
 
     @ReactMethod
@@ -211,6 +260,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
     // removed @Override temporarily just to get it working on different versions of RN
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Ignored, required to implement ActivityEventListener for RN 0.33
+
     }
 
     @ReactMethod
@@ -338,5 +388,31 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
      */
     public void deleteChannel(String channel_id) {
       mRNPushNotificationHelper.deleteChannel(channel_id);
+    }
+
+    private void bindBaiduWork() {
+        // 开启华为代理，如需开启，请参考华为代理接入文档
+        //！！应用需要已经在华为推送官网注册
+        // PushManager.enableHuaweiProxy(this, true);
+        // 开启魅族代理，如需开启，请参考魅族代理接入文档
+        //！！需要将mzAppId和mzAppKey修改为自己应用在魅族推送官网申请的APPID和APPKEY
+        // PushManager.enableMeizuProxy(this, true, mzAppId, mzAppKey);
+        // 开启OPPO代理，如需开启，请参考OPPO代理接入文档
+        //！！需要将opAppKey和opAppSecret修改为自己应用在OPPO推送官网申请的APPKEY和APPSECRET
+        // PushManager.enableOppoProxy(this, true, opAppKey, opAppSecret);
+        // 开启小米代理，如需开启，请参考小米代理接入文档
+        //！！需要将xmAppId和xmAppKey修改为自己应用在小米推送官网申请的APPID和APPKEY
+        // PushManager.enableXiaomiProxy(this, true, xmAppId, xmAppKey);
+        // 开启VIVO代理，如需开启，请参考VIVO代理接入文档
+        //！！需要将AndroidManifest.xml中com.vivo.push.api_key和com.vivo.push.app_id修改为自己应用在VIVO推送官网申请的APPKEY和APPID
+        // PushManager.enableVivoProxy(this, true);
+        // Push: 以apikey的方式登录，一般放在主Activity的onCreate中。
+        // 这里把apikey存放于manifest文件中，只是一种存放方式，
+        // 您可以用自定义常量等其它方式实现，来替换参数中的Utils.getMetaValue(PushDemoActivity.this,
+        // "api_key")
+        // ！！请将AndroidManifest.xml api_key 字段值修改为自己的 api_key 方可使用 ！！
+        //！！ATTENTION：You need to modify the value of api_key to your own in AndroidManifest.xml to use this Demo !!
+        PushManager.startWork(getReactApplicationContext(), PushConstants.LOGIN_TYPE_API_KEY,
+                Utils.getMetaValue(getReactApplicationContext(), "api_key"));
     }
 }

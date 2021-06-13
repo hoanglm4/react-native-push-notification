@@ -9,6 +9,7 @@ var DEVICE_NOTIF_EVENT = 'remoteNotificationReceived';
 var NOTIF_REGISTER_EVENT = 'remoteNotificationsRegistered';
 var NOTIF_ACTION_EVENT = 'notificationActionReceived';
 var REMOTE_FETCH_EVENT = 'remoteFetch';
+var NOTIF_BAIDU_BIND_EVENT = 'baiduNotificationsBind';
 
 let NotificationsComponent = function() {
 
@@ -24,8 +25,8 @@ NotificationsComponent.prototype.getInitialNotification = function () {
         });
 };
 
-NotificationsComponent.prototype.requestPermissions = function() {
-	RNPushNotification.requestPermissions();
+NotificationsComponent.prototype.requestPermissions = function(pushType) {
+	RNPushNotification.requestPermissions(pushType);
 };
 
 NotificationsComponent.prototype.subscribeToTopic = function(topic) {
@@ -106,7 +107,17 @@ NotificationsComponent.prototype.addEventListener = function(type, handler) {
 				}
 			}
 		);
-  }
+	} else if (type === 'baiduBind') {
+		listener = DeviceEventEmitter.addListener(
+			NOTIF_BAIDU_BIND_EVENT,
+			function (bindData) {
+				if (bindData && bindData.dataJSON) {
+					let data = JSON.parse(bindData.dataJSON);
+					handler(data);
+				}
+			}
+		);
+	}
 
 	_notifHandlers.set(type, listener);
 };

@@ -74,8 +74,19 @@ Notifications.configure = function(options) {
     this.onRemoteFetch = options.onRemoteFetch;
   }
 
+  if (typeof options.onBaiduBind !== 'undefined') {
+    this.onBaiduBind = options.onBaiduBind;
+  }
+  
+  if ( typeof options.pushType !== 'undefined' ) {
+    this.pushType = options.pushType;
+  } else {
+    this.pushType = "FCM"
+  }
+
   if ( this.isLoaded === false ) {
     this._onRegister = this._onRegister.bind(this);
+    this._onBaiduBind = this._onBaiduBind.bind(this);
     this._onRegistrationError = this._onRegistrationError.bind(this);
     this._onNotification = this._onNotification.bind(this);
     this._onRemoteFetch = this._onRemoteFetch.bind(this);
@@ -86,6 +97,7 @@ Notifications.configure = function(options) {
     this.callNative( 'addEventListener', [ 'localNotification', this._onNotification ] );
     Platform.OS === 'android' ? this.callNative( 'addEventListener', [ 'action', this._onAction ] ) : null
     Platform.OS === 'android' ? this.callNative( 'addEventListener', [ 'remoteFetch', this._onRemoteFetch ] ) : null
+    Platform.OS === 'android' ? this.callNative('addEventListener', ['baiduBind', this._onBaiduBind]) : null
 
     this.isLoaded = true;
   }
@@ -129,6 +141,7 @@ Notifications.unregister = function() {
   this.callNative( 'removeEventListener', [ 'localNotification', this._onNotification ] )
   Platform.OS === 'android' ? this.callNative( 'removeEventListener', [ 'action', this._onAction ] ) : null
   Platform.OS === 'android' ? this.callNative( 'removeEventListener', [ 'remoteFetch', this._onRemoteFetch ] ) : null
+  Platform.OS === 'android' ? this.callNative( 'removeEventListener', [ 'baiduBind', this._onBaiduBind ] ) : null
   this.isLoaded = false;
 };
 
@@ -314,6 +327,12 @@ Notifications._onRegister = function(token) {
   }
 };
 
+Notifications._onBaiduBind = function (bindData) {
+  if (this.onBaiduBind !== false) {
+    this.onBaiduBind(bindData);
+  }
+};
+
 Notifications._onRegistrationError = function(err) {
   if ( this.onRegistrationError !== false ) {
     this.onRegistrationError(err);
@@ -438,7 +457,7 @@ Notifications._requestPermissions = function() {
               .catch(this._onPermissionResult.bind(this));
     }
   } else if (Platform.OS === 'android') {
-    return this.callNative( 'requestPermissions', []);
+    return this.callNative( 'requestPermissions', [this.pushType]);
   }
 };
 
@@ -447,7 +466,7 @@ Notifications.requestPermissions = function() {
   if ( Platform.OS === 'ios' ) {
     return this.callNative( 'requestPermissions', [ this.permissions ]);
   } else if (Platform.OS === 'android') {
-    return this.callNative( 'requestPermissions', []);
+    return this.callNative( 'requestPermissions', arguments || [this.pushType]);
   }
 };
 

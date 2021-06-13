@@ -8,7 +8,8 @@
     "start": "react-native start",
     "test": "jest",
     "lint": "eslint .",
-    "pod-install": "cd ios && pod install"
+    "pod-install": "cd ios && pod install",
+    "bundle:android:dev": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res"
   },
   "dependencies": {
     "@react-native-community/push-notification-ios": "^1.7.0",

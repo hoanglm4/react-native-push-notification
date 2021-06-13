@@ -2,6 +2,7 @@ package com.dieam.reactnativepushnotification.modules;
 
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -19,12 +20,14 @@ import java.util.Set;
 
 public class RNPushNotificationJsDelivery {
     private ReactContext mReactContext;
+    public static final String LOG_TAG = "RNPushNotification";// all logging should use this tag
 
     public RNPushNotificationJsDelivery(ReactContext reactContext) {
         mReactContext = reactContext;
     }
 
     void sendEvent(String eventName, Object params) {
+        Log.d(LOG_TAG, "eventName: " + eventName + " | params: " + params.toString());
         if (mReactContext.hasActiveCatalystInstance()) {
             mReactContext
                     .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
@@ -46,6 +49,15 @@ public class RNPushNotificationJsDelivery {
         params.putString("dataJSON", bundleString);
 
         sendEvent("remoteNotificationReceived", params);
+    }
+
+    void baiduBind(Bundle bundle) {
+        String bundleString = convertJSON(bundle);
+
+        WritableMap params = Arguments.createMap();
+        params.putString("dataJSON", bundleString);
+
+        sendEvent("baiduNotificationsBind", params);
     }
 
     void notifyNotificationAction(Bundle bundle) {
