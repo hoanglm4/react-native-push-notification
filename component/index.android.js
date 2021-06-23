@@ -64,6 +64,10 @@ NotificationsComponent.prototype.setApplicationIconBadgeNumber = function(number
        RNPushNotification.setApplicationIconBadgeNumber(number);
 };
 
+NotificationsComponent.prototype.checkPlayServicesStatus = function () {
+	return RNPushNotification.checkPlayServicesStatus();
+};
+
 NotificationsComponent.prototype.checkPermissions = function(callback) {
 	RNPushNotification.checkPermissions().then(alert => callback({ alert }));
 };

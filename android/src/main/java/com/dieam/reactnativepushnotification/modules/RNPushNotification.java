@@ -15,6 +15,8 @@ import com.baidu.android.pushservice.PushConstants;
 import com.baidu.android.pushservice.PushManager;
 import com.dieam.reactnativepushnotification.baidu.Utils;
 import com.dieam.reactnativepushnotification.helpers.ApplicationBadgeHelper;
+import com.dieam.reactnativepushnotification.helpers.GoogleAPIProvider;
+import com.dieam.reactnativepushnotification.helpers.GooglePlayServicesStatus;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
@@ -61,6 +63,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule
     private final SecureRandom mRandomNumberGenerator = new SecureRandom();
     private RNPushNotificationJsDelivery mJsDelivery;
     private ReactApplicationContext mContext;
+    private GoogleAPIProvider mGoogleAPIProvider;
 
     private final BroadcastReceiver mBaiduPushReceiver = new BroadcastReceiver() {
         @Override
@@ -85,6 +88,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule
         // This is used to delivery callbacks to JS
         mJsDelivery = new RNPushNotificationJsDelivery(reactContext);
         mContext = reactContext;
+        mGoogleAPIProvider = new GoogleAPIProvider(reactContext);
         this.registerBroadcastReceiver();
     }
 
@@ -173,6 +177,12 @@ public class RNPushNotification extends ReactContextBaseJavaModule
     }
 
     @ReactMethod
+    public void checkPlayServicesStatus(Promise promise) {
+        GooglePlayServicesStatus status = mGoogleAPIProvider.getGooglePlayServicesStatus();
+        promise.resolve(status.getStatus());
+    }
+
+    @ReactMethod
     public void checkPermissions(Promise promise) {
         ReactContext reactContext = getReactApplicationContext();
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(reactContext);
@@ -182,7 +192,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule
     @ReactMethod
     public void requestPermissions(String pushType) {
         Log.d(LOG_TAG, "[requestPermissions] pushType = " + pushType);
-        if ("BAIDU".equalsIgnoreCase(pushType)) {
+        if ("baidu".equalsIgnoreCase(pushType)) {
             this.bindBaiduWork();
         }
         final RNPushNotificationJsDelivery fMjsDelivery = mJsDelivery;

@@ -174,4 +174,8 @@ export default class NotifService {
   getDeliveredNotifications(callback) {
     PushNotification.getDeliveredNotifications(callback);
   }
+  
+  checkPlayServicesStatus() {
+    return PushNotification.checkPlayServicesStatus();
+  }
 }

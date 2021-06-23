@@ -16,16 +16,20 @@ import {
   Alert,
 } from 'react-native';
 import NotifService from './NotifService';
+import PushNotification from "react-native-push-notification";
 
 export default class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+      this.state = {
+          googlePlayServiceAvailable: false
+      };
 
     this.notif = new NotifService(
       this.onRegister.bind(this),
       this.onNotif.bind(this),
     );
+    this.notif.checkPlayServicesStatus().then(status => this.handleGoogleService(status));
   }
 
   render() {
@@ -139,6 +143,13 @@ export default class App extends Component {
         {this.state.fcmRegistered && <Text>FCM Configured !</Text>}
 
         <View style={styles.spacer}></View>
+
+          <View style={styles.spacer}></View>
+
+          {this.state.googlePlayServiceAvailable && <Text>Google Play Service Available</Text>}
+          {!this.state.googlePlayServiceAvailable && <Text>Google Play Service Not Available</Text>}
+
+          <View style={styles.spacer}></View>
       </View>
     );
   }
@@ -154,6 +165,10 @@ export default class App extends Component {
   handlePerm(perms) {
     Alert.alert('Permissions', JSON.stringify(perms));
   }
+
+    handleGoogleService(status) {
+        this.setState({googlePlayServiceAvailable: status === PushNotification.GooglePlayServicesStatus.AVAILABLE})
+    }
 }
 
 const styles = StyleSheet.create({
