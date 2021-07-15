@@ -71,9 +71,9 @@ public class BaiduPushMessageReceiver extends PushMessageReceiver {
         final Bundle bundle = new Bundle();
         Bundle dataBundle = new Bundle();
 
-        if (!TextUtils.isEmpty(customContentString)) {
+        if (!TextUtils.isEmpty(message)) {
             try {
-                JSONObject customJson = new JSONObject(customContentString);
+                JSONObject customJson = new JSONObject(message);
                 JSONArray keys = customJson.names();
                 for (int i = 0; i < keys.length(); i++) {
                     String key = keys.getString(i);
