@@ -201,18 +201,7 @@ public class BaiduPushMessageReceiver extends PushMessageReceiver {
     }
 
     private void updateContent(Context context, String content) {
-        String logText = "" + Utils.logStringCache;
-
-        if (!logText.equals("")) {
-            logText += "\n";
-        }
-
-        SimpleDateFormat sDateFormat = new SimpleDateFormat("HH-mm-ss");
-        logText += sDateFormat.format(new Date()) + ": ";
-        logText += content;
-
-        Utils.logStringCache = logText;
-        Log.d(TAG, "updateContent: " + logText);
+       
     }
 
     private void handleRemotePushNotification(Context context, Bundle bundle, boolean userInteraction) {
