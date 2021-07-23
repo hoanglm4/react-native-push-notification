@@ -276,6 +276,10 @@
         <meta-data
             android:name="api_key"
             android:value="4npw0NG3di50SaibRLi36avS" />
+
+        <meta-data
+            android:name="push_kit_auto_init_enabled"
+            android:value="true" />
     </application>
 
 </manifest>

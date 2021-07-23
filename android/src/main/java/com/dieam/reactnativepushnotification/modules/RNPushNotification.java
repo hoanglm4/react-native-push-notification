@@ -403,7 +403,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule
     private void bindBaiduWork() {
         // 开启华为代理，如需开启，请参考华为代理接入文档
         //！！应用需要已经在华为推送官网注册
-        // PushManager.enableHuaweiProxy(this, true);
+        PushManager.enableHuaweiProxy(getReactApplicationContext(), true);
         // 开启魅族代理，如需开启，请参考魅族代理接入文档
         //！！需要将mzAppId和mzAppKey修改为自己应用在魅族推送官网申请的APPID和APPKEY
         // PushManager.enableMeizuProxy(this, true, mzAppId, mzAppKey);
