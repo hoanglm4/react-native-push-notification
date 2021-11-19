@@ -26,6 +26,13 @@ const Notifications = {
   }
 };
 
+Notifications.GooglePlayServicesStatus = {
+  AVAILABLE: 10,
+  GMS_DISABLED: 20,
+  GMS_NEED_UPDATE: 21,
+  INVALID: 30
+};
+
 Notifications.callNative = function(name, params) {
   if ( typeof this.handler[name] === 'function' ) {
     if ( typeof params !== 'array' &&
@@ -502,6 +509,14 @@ Notifications.popInitialNotification = function(handler) {
       this._transformNotificationObject(result, true)
     );
   });
+};
+
+Notifications.checkPlayServicesStatus = function () {
+  if (Platform.OS === 'ios') {
+    return async () => Notifications.GooglePlayServicesStatus.AVAILABLE;
+  } else if (Platform.OS === 'android') {
+    return this.callNative('checkPlayServicesStatus', arguments);
+  }
 };
 
 Notifications.checkPermissions = function() {

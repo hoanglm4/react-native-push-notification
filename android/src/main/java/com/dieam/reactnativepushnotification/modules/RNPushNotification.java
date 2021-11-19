@@ -13,6 +13,8 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 
 import com.dieam.reactnativepushnotification.helpers.ApplicationBadgeHelper;
+import com.dieam.reactnativepushnotification.helpers.GoogleAPIProvider;
+import com.dieam.reactnativepushnotification.helpers.GooglePlayServicesStatus;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
@@ -54,6 +56,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
     private RNPushNotificationHelper mRNPushNotificationHelper;
     private final SecureRandom mRandomNumberGenerator = new SecureRandom();
     private RNPushNotificationJsDelivery mJsDelivery;
+    private GoogleAPIProvider mGoogleAPIProvider;
 
     public RNPushNotification(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -66,6 +69,7 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
         mRNPushNotificationHelper = new RNPushNotificationHelper(applicationContext);
         // This is used to delivery callbacks to JS
         mJsDelivery = new RNPushNotificationJsDelivery(reactContext);
+        mGoogleAPIProvider = new GoogleAPIProvider(reactContext);
     }
 
     @Override
@@ -124,6 +128,12 @@ public class RNPushNotification extends ReactContextBaseJavaModule implements Ac
         }
 
         mRNPushNotificationHelper.invokeApp(bundle);
+    }
+
+    @ReactMethod
+    public void checkPlayServicesStatus(Promise promise) {
+        GooglePlayServicesStatus status = mGoogleAPIProvider.getGooglePlayServicesStatus();
+        promise.resolve(status.getStatus());
     }
 
     @ReactMethod
